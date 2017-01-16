@@ -1,6 +1,5 @@
 package ai.classifier;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,7 @@ public class Classifier {
 	 * Constructs a classifier with given training set.
 	 * @param texts Should consist of a mapping of class name to texts associated with the class
 	 */
-	public Classifier(Map<String, List<String>> texts, List<String> stopWords) {
+	public Classifier(Map<String, List<String>> texts) {
 		// Initialize some stuff
 		classes = texts.keySet();
 		textProcessor = new TextProcessor();
@@ -88,7 +87,4 @@ public class Classifier {
 	public Map<String, Map<String, Integer>> getWordCounts() {
 		return wordCounts;
 	}
-	
-	
-
 }
