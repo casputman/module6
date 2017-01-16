@@ -42,7 +42,7 @@ public class Classifier {
 	public Classifier(Map<String, List<String>> texts, List<String> stopWords) {
 		// Initialize some stuff
 		classes = texts.keySet();
-		textProcessor = new TextProcessor(stopWords);
+		textProcessor = new TextProcessor();
 		
 		textCounts = new HashMap<String, Integer>();
 		wordCounts = new HashMap<String, Map<String, Integer>>();
