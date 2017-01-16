@@ -1,21 +1,31 @@
 package ai.classifier;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TextProcessor implements ITextProcessor {
+	List<String> stopWords;
 
-	public TextProcessor() {
-		// TODO Auto-generated constructor stub
+	public TextProcessor(List<String> stopWords) {
+		this.stopWords = stopWords;
 	}
-	
+
 	/**
 	 * Takes a string (raw text) and turns it into a list of cleaned up words.
 	 * I.E. "Alcohol in the human body:   Ethanol, or more" -> {alcohol, in, the, human, body, ethanol, or, more}
 	 */
-	@Override
 	public List<String> process(String text) {
-		// TODO Auto-generated method stub
-		return null;
+		String[] words = text.replaceAll("[^a-zA-Z ]", " ").toLowerCase().split("\\s+");
+		List<String> arrayList = new ArrayList<>(); 
+		Collections.addAll(arrayList, words);
+		for (int i = 0; i < arrayList.size(); i++){
+			for (String word : stopWords){
+				if (arrayList.get(i).equals(word)){
+					arrayList.remove(i);
+				}
+			}
+		}
+		return arrayList;
 	}
-
 }
