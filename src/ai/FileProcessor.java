@@ -13,9 +13,6 @@ import java.util.stream.Stream;
  *
  */
 public class FileProcessor {
-	public FileProcessor() throws IOException {
-	}
-	
 	public static List<String> importFiles(String path) throws IOException {
 		List<String> fileStrings = new ArrayList<String>();
 		
