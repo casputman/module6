@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Scanner;
@@ -14,7 +15,7 @@ public class TextProcessor {
 	Collection<String> stopWords;
 	
 	public TextProcessor() {
-		stopWords = new ArrayList<String>();
+		stopWords = new HashSet<String>();
 		
 		InputStream input = getClass().getResourceAsStream("stopWords.txt");
 		if (input != null) {
