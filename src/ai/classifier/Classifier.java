@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import ai.classifier.textProcessor.TextProcessor;
 
@@ -15,6 +16,9 @@ import ai.classifier.textProcessor.TextProcessor;
  *
  */
 public class Classifier {
+	public static final int FEATURE_SET_SIZE = 300;
+	
+	public static final double K = 1;
 	
 	/**
 	 * The text processor we will use.
@@ -42,25 +46,74 @@ public class Classifier {
 	Map<String, Double> chiSquared;
 	
 	/**
+	 * Contains all words in the vocabulary and their respective chances per class.
+	 */
+	Set<String> vocabulary;
+	
+	/**
+	 * Contains prior values for every class in log2.
+	 */
+	Map<String, Double> prior;
+	
+	/**
+	 * Contains a mapping of class -> (word -> condProb in log2).
+	 */
+	Map<String, Map<String, Double>> conditionalProbabilities;
+	
+	/**
 	 * Constructs a classifier with given training set.
 	 * @param texts Should consist of a mapping of class name to texts associated with the class
 	 */
 	public Classifier(Map<String, Collection<String>> texts) {
 		// Initialize some stuff
-		classes = new HashSet<String>(texts.keySet());
+		classes = new HashSet<String>();
 		textProcessor = new TextProcessor();
 		
 		textCounts = new HashMap<String, Integer>();
 		wordCounts = new HashMap<String, Map<String, Integer>>();
+		prior = new HashMap<String, Double>();
+		conditionalProbabilities = new HashMap<String, Map<String, Double>>();
 		
 		texts.keySet().stream().forEach(className -> addClass(className));
 		trainBulk(texts);
 	}
 	
 	public void addClass(String className) {
+		classes.add(className);
 		wordCounts.put(className, new HashMap<String, Integer>());
+		conditionalProbabilities.put(className, new HashMap<String, Double>());
 	}
-
+	
+	public String apply(String text) {
+		/*
+		 * We will be maximizing log(P(c)) + sum over words w in text (log(P(w|c))
+		 */
+		
+		List<String> cleanText = textProcessor.process(text);
+		
+		Double maxScore = null;
+		String maxClass = null;
+		
+		for (String className : classes) {
+			double score = prior.get(className);
+			
+			for (String word : cleanText) {
+				score += catchNullNumber(conditionalProbabilities.get(className).get(word));
+			}
+			
+			if (maxScore == null || score > maxScore) {
+				maxScore = score;
+				maxClass = className;
+			}
+		}
+		
+		return maxClass;
+	}
+	
+	private static double log2(double x) {
+	    return Math.log(x) / Math.log(2);
+	}
+	
 	private double calcChiSquare(String word) {
 		double chiSquareValue = 0;
 		
@@ -79,7 +132,7 @@ public class Classifier {
 		
 		return chiSquareValue;
 	}
-	
+
 	private double calcExpectedValue(String className, String word, boolean present) {
 		/*
 		 * We calculate Wi x Cj / N
@@ -113,11 +166,20 @@ public class Classifier {
 	private int catchNullNumber(Integer num) {
 		return num == null ? 0 : num;
 	}
-
+	
+	/**
+	 * Returns 0 if argument is zero, otherwise returns argument.
+	 * @param num
+	 * @return
+	 */
+	private double catchNullNumber(Double num) {
+		return num == null ? 0 : num;
+	}
+	
 	public Map<String, Double> getChiSquared() {
 		return chiSquared;
 	}
-	
+
 	public Map<String, Map<String, Integer>> getWordCounts() {
 		return wordCounts;
 	}
@@ -131,7 +193,7 @@ public class Classifier {
 		train(className, text, true);
 	}
 	
-	private void train(String className, String text, boolean updateChiSquare) {
+	private void train(String className, String text, boolean update) {
 		// Increment text count
 		Integer textCount = catchNullNumber(textCounts.get(className));
 		textCounts.put(className, textCount + 1);
@@ -148,8 +210,8 @@ public class Classifier {
 			classWordCounts.put(word, count + 1);
 		}
 		
-		if (updateChiSquare) {
-			updateChiSquared();
+		if (update) {
+			update();
 		}
 	}
 	
@@ -159,7 +221,7 @@ public class Classifier {
 	 */
 	public void trainBulk(Map<String, Collection<String>> texts) {
 		texts.keySet().stream().forEach(className -> trainBulk(className, texts.get(className), false));
-		updateChiSquared();
+		update();
 	}
 	
 	/**
@@ -171,11 +233,11 @@ public class Classifier {
 		trainBulk(className, texts, true);
 	}
 	
-	private void trainBulk(String className, Collection<String> texts, boolean updateChiSquared) {
+	private void trainBulk(String className, Collection<String> texts, boolean update) {
 		texts.stream().forEach(text -> train(className, text, false));
 		
-		if (updateChiSquared) {
-			updateChiSquared();
+		if (update) {
+			update();
 		}
 	}
 
@@ -184,5 +246,42 @@ public class Classifier {
 		wordCounts.values().stream().forEach(
 				m -> m.keySet().stream().forEach(
 						word -> chiSquared.put(word, calcChiSquare(word))));
+	}
+	
+	private void update() {
+		updateConditionalProbabilities();
+	}
+	
+	private void updateVocabulary() {
+		updateChiSquared();
+		
+		vocabulary = chiSquared.entrySet().stream()
+				.sorted((a, b) -> -a.getValue().compareTo(b.getValue()))
+				.limit(FEATURE_SET_SIZE)
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
+	}
+	
+	private void updateConditionalProbabilities() {
+		updateVocabulary();
+		
+		for (String className : classes) {
+			double docsInClass = textCounts.get(className);
+			prior.put(className, log2(docsInClass) - log2(textCounts.values().stream()
+																	.mapToInt(i -> i)
+																	.sum()));
+			
+			double totalWordOccurrencesInClass = wordCounts.get(className).entrySet().stream()
+																	.filter(e -> vocabulary.contains(e.getKey()))
+																	.mapToDouble(e -> e.getValue() + K)
+																	.sum();
+			
+			for (String word : vocabulary) {
+				double occurrences = catchNullNumber(wordCounts.get(className).get(word));
+				
+				double condProb = log2(occurrences + K) - log2(totalWordOccurrencesInClass);
+				conditionalProbabilities.get(className).put(word, condProb);
+			}
+		}
 	}
 }

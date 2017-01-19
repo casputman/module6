@@ -13,7 +13,7 @@ import ai.classifier.Classifier;
  *
  */
 public class AI {
-	static String BASE_PATH = "C:\\Users\\Florian\\Desktop\\blogs";
+	public static final String BASE_PATH = "C:\\Users\\Florian\\Desktop\\blogs";
 	
 	public static void main(String[] args) throws IOException {
 		Map<String, Collection<String>> texts = new HashMap<String, Collection<String>>();
@@ -22,9 +22,6 @@ public class AI {
 		texts.put("Male", FileProcessor.importFiles(Paths.get(BASE_PATH, "M").toString()));
 		
 		Classifier classifier = new Classifier(texts);
-		
-		System.out.println(classifier.getWordCounts());
-		System.out.println(classifier.getChiSquared());
 	}
 	
 	public AI() {
