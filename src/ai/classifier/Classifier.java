@@ -16,9 +16,15 @@ import ai.classifier.textProcessor.TextProcessor;
  *
  */
 public class Classifier {
-	public static final int FEATURE_SET_SIZE = 300;
+	public static final int DEFAULT_VOCABULARY_SIZE = 100;
+	public static final double DEFAULT_K = 1;
 	
-	public static final double K = 1;
+	private static double log2(double x) {
+	    return Math.log(x) / Math.log(2);
+	}
+	
+	private final int FEATURE_SET_SIZE;
+	private final double K;
 	
 	/**
 	 * The text processor we will use.
@@ -34,12 +40,11 @@ public class Classifier {
 	 * Maps class name to text count.
 	 */
 	Map<String, Integer> textCounts;
-	
 	/**
 	 * Maps class name to occurrence counts of words.
 	 */
 	Map<String, Map<String, Integer>> wordCounts;
-	
+
 	/**
 	 * Maps words to their chiSquareValues.
 	 */
@@ -65,7 +70,20 @@ public class Classifier {
 	 * @param texts Should consist of a mapping of class name to texts associated with the class
 	 */
 	public Classifier(Map<String, Collection<String>> texts) {
+		this(texts, DEFAULT_VOCABULARY_SIZE, DEFAULT_K);
+	}
+	
+	/**
+	 * Constructs a classifier with given training set and given parameters vocabulary size and smoothing factor K.
+	 * @param texts
+	 * @param vocabularySize
+	 * @param k
+	 */
+	public Classifier(Map<String, Collection<String>> texts, int vocabularySize, double k) {
 		// Initialize some stuff
+		FEATURE_SET_SIZE = vocabularySize;
+		K = k;
+		
 		classes = new HashSet<String>();
 		textProcessor = new TextProcessor();
 		
@@ -110,10 +128,6 @@ public class Classifier {
 		return maxClass;
 	}
 	
-	private static double log2(double x) {
-	    return Math.log(x) / Math.log(2);
-	}
-	
 	private double calcChiSquare(String word) {
 		double chiSquareValue = 0;
 		
@@ -132,7 +146,7 @@ public class Classifier {
 		
 		return chiSquareValue;
 	}
-
+	
 	private double calcExpectedValue(String className, String word, boolean present) {
 		/*
 		 * We calculate Wi x Cj / N
@@ -163,21 +177,29 @@ public class Classifier {
 	 * @param num
 	 * @return
 	 */
-	private int catchNullNumber(Integer num) {
+	private double catchNullNumber(Double num) {
 		return num == null ? 0 : num;
 	}
-	
+
 	/**
 	 * Returns 0 if argument is zero, otherwise returns argument.
 	 * @param num
 	 * @return
 	 */
-	private double catchNullNumber(Double num) {
+	private int catchNullNumber(Integer num) {
 		return num == null ? 0 : num;
 	}
 	
 	public Map<String, Double> getChiSquared() {
 		return chiSquared;
+	}
+	
+	public Set<String> getClasses() {
+		return classes;
+	}
+	
+	public Map<String, Integer> getTextCounts() {
+		return textCounts;
 	}
 
 	public Map<String, Map<String, Integer>> getWordCounts() {
@@ -241,25 +263,15 @@ public class Classifier {
 		}
 	}
 
+	private void update() {
+		updateConditionalProbabilities();
+	}
+	
 	private void updateChiSquared() {
 		chiSquared = new HashMap<String, Double>();
 		wordCounts.values().stream().forEach(
 				m -> m.keySet().stream().forEach(
 						word -> chiSquared.put(word, calcChiSquare(word))));
-	}
-	
-	private void update() {
-		updateConditionalProbabilities();
-	}
-	
-	private void updateVocabulary() {
-		updateChiSquared();
-		
-		vocabulary = chiSquared.entrySet().stream()
-				.sorted((a, b) -> -a.getValue().compareTo(b.getValue()))
-				.limit(FEATURE_SET_SIZE)
-				.map(Map.Entry::getKey)
-				.collect(Collectors.toSet());
 	}
 	
 	private void updateConditionalProbabilities() {
@@ -283,5 +295,23 @@ public class Classifier {
 				conditionalProbabilities.get(className).put(word, condProb);
 			}
 		}
+	}
+	
+	private void updateVocabulary() {
+		updateChiSquared();
+		
+		vocabulary = chiSquared.entrySet().stream()
+				.sorted((a, b) -> -a.getValue().compareTo(b.getValue()))
+				.limit(FEATURE_SET_SIZE)
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
+	}
+
+	public double getK() {
+		return K;
+	}
+
+	public int getVocabularySize() {
+		return FEATURE_SET_SIZE;
 	}
 }

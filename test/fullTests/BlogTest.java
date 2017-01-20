@@ -2,16 +2,13 @@ package fullTests;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import ai.AI;
 import ai.FileProcessor;
 import ai.classifier.Classifier;
 
@@ -19,11 +16,14 @@ public class BlogTest {
 	Classifier classifier;
 	Map<String, Collection<String>> texts;
 	
+	public static final String BASE_PATH = "C:\\Users\\Florian\\Desktop\\blogs";
+
+	
 	public BlogTest() throws IOException {
 		texts = new HashMap<String, Collection<String>>();
 		
-		texts.put("Female", FileProcessor.importFiles(Paths.get(AI.BASE_PATH, "F").toString()));
-		texts.put("Male", FileProcessor.importFiles(Paths.get(AI.BASE_PATH, "M").toString()));
+		texts.put("Female", FileProcessor.importFiles(Paths.get(BASE_PATH, "F").toString()));
+		texts.put("Male", FileProcessor.importFiles(Paths.get(BASE_PATH, "M").toString()));
 	}
 	
 	@Before
@@ -33,7 +33,7 @@ public class BlogTest {
 
 	@Test
 	public void femaleTest() throws IOException {
-		Collection<String> testTexts = FileProcessor.importFiles(Paths.get(AI.BASE_PATH, "test", "F").toString());
+		Collection<String> testTexts = FileProcessor.importFiles(Paths.get(BASE_PATH, "test", "F").toString());
 		
 		Map<String, Integer> results = new HashMap<String, Integer>();
 		for (String testText : testTexts) {
@@ -51,7 +51,7 @@ public class BlogTest {
 	
 	@Test
 	public void maleTest() throws IOException {
-		Collection<String> testTexts = FileProcessor.importFiles(Paths.get(AI.BASE_PATH, "test", "M").toString());
+		Collection<String> testTexts = FileProcessor.importFiles(Paths.get(BASE_PATH, "test", "M").toString());
 		
 		Map<String, Integer> results = new HashMap<String, Integer>();
 		for (String testText : testTexts) {
@@ -66,5 +66,4 @@ public class BlogTest {
 		
 		System.out.println("Male test result: " + results);
 	}
-
 }
