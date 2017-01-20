@@ -1,31 +1,27 @@
 package ai;
 
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.awt.EventQueue;
 
-import ai.classifier.Classifier;
+import ai.ui.gui.InitMainWindow;
 
 /**
  * Responsible for starting the program
  *
  */
 public class AI {
-	public static final String BASE_PATH = "C:\\Users\\Florian\\Desktop\\blogs";
-	
-	public static void main(String[] args) throws IOException {
-		Map<String, Collection<String>> texts = new HashMap<String, Collection<String>>();
-		
-		texts.put("Female", FileProcessor.importFiles(Paths.get(BASE_PATH, "F").toString()));
-		texts.put("Male", FileProcessor.importFiles(Paths.get(BASE_PATH, "M").toString()));
-		
-		Classifier classifier = new Classifier(texts);
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					@SuppressWarnings("unused")
+					InitMainWindow window = new InitMainWindow();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
 	}
-	
-	public AI() {
-		// TODO Auto-generated constructor stub
-	}
-
 }
